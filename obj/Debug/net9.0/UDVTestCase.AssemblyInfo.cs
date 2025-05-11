@@ -13,7 +13,7 @@ using System.Reflection;
 [assembly: System.Reflection.AssemblyCompanyAttribute("UDVTestCase")]
 [assembly: System.Reflection.AssemblyConfigurationAttribute("Debug")]
 [assembly: System.Reflection.AssemblyFileVersionAttribute("1.0.0.0")]
-[assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.0+55d817a8676415a2657af1590cf23c3f49b564f4")]
+[assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.0+6b336927d4e0d0396f78388b561215c8918384dc")]
 [assembly: System.Reflection.AssemblyProductAttribute("UDVTestCase")]
 [assembly: System.Reflection.AssemblyTitleAttribute("UDVTestCase")]
 [assembly: System.Reflection.AssemblyVersionAttribute("1.0.0.0")]
