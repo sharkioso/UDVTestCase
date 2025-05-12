@@ -1,76 +1,34 @@
 using System.Text.Json;
+using VkNet;
+using VkNet.Model;
 
 public class VKService
 {
-    private readonly HttpClient client;
-    private readonly BDContext BD;
+    private readonly VkApi vkApi;
+    private readonly long userID;
     private readonly ILogger<VKService> logger;
 
-    public VKService(HttpClient client, BDContext BD, ILogger<VKService> logger)
+    public VKService(string accessToken, long userID, ILogger<VKService> logger)
     {
-        this.client = client;
-        this.BD = BD;
+        this.vkApi = new VkApi();
+        this.userID = userID;
         this.logger = logger;
+        vkApi.Authorize(new ApiAuthParams { AccessToken = accessToken });
     }
 
-    public async Task<Dictionary<char, int>> PostAnalyze(string userID, string accessToken)
+    public List<string> GetLastPosts(int count)
     {
-        logger.LogInformation($"Start analyze for {userID}");
-        var post = await GetLastPosts(userID, accessToken);
-        var letterCount = CountLetters(post);
-        await SaveToBD(userID, letterCount);
+        var posts = vkApi.Wall.Get(new WallGetParams
+        {
+            OwnerId = userID,
+            Count = (ulong)count
+        });
 
-        logger.LogInformation($"Analyze for {userID} is complete");
-        return letterCount;
-    }
-
-    private async Task<List<string>> GetLastPosts(string userID, string accessToken)
-    {
-        var url = "https://api.vk.com/method/wall.get" +
-                  $"?owner_id={userID}" +
-                  $"&count=5" +
-                  $"&access_token={accessToken}" +
-                  $"&v=5.131";
-        var response = await client.GetAsync(url);
-        var json = await response.Content.ReadAsStringAsync();
-        var data = JsonDocument.Parse(json);
-
-        return data.RootElement
-            .GetProperty("response")
-            .GetProperty("Items")
-            .EnumerateArray()
-            .Select(post => post.GetProperty("text").GetString() ?? "")
+        return posts.WallPosts
+            .Where(p => !string.IsNullOrEmpty(p.Text))
+            .Select(p => p.Text)
+            .Take(count)
             .ToList();
-    }
-
-    private Dictionary<char, int> CountLetters(List<string> post)
-    {
-        var count = new Dictionary<char, int>();
-        foreach (var symbol in string.Concat(post).ToLower())
-        {
-            if (char.IsLetter(symbol))
-            {
-                count.TryAdd(symbol, 0);
-                count[symbol]++;
-            }
-        }
-
-        return count.OrderBy(pair => pair.Value)
-                    .ToDictionary(pair => pair.Key, pair => pair.Value);
-    }
-
-    private async Task SaveToBD(string userID, Dictionary<char, int> letterCount)
-    {
-        var analitic = new PostAnalyze
-        {
-            UserID = userID,
-            AnalyzeDate = DateTime.UtcNow,
-            LetterCount = letterCount
-        };
-        await BD.Analysis.AddAsync(analitic);
-        await BD.SaveChangesAsync();
-
-
     }
 
 }
